@@ -81,25 +81,48 @@ app.get('/api/v1/autores', function(peticion, respuesta) {
     })
     connection.release()
   })
-  
+
 })
 
 app.get('/api/v1/autores/:id', function(peticion, respuesta) {
   
   pool.getConnection(function(err, connection) {
     const query = `
-      SELECT autores.id id, email, pseudonimo, publicaciones.id publicacion_id, titulo
+      SELECT autores.id id, email, pseudonimo, publicaciones.id publicacion_id, titulo, resumen, votos
       FROM autores
-      INNER JOIN
+      LEFT JOIN
       publicaciones ON
       autores.id = publicaciones.autor_id
       WHERE autores.id = ${connection.escape(peticion.params.id)}
       ORDER BY autores.id DESC, publicaciones.fecha_hora DESC
     `
     connection.query(query, function(error, filas, campos) {
-      
-        respuesta.json({data: filas})
-      
+      autor = []
+      AutorId = undefined
+      filas.forEach(registro => {
+        if (registro.id != AutorId){
+          AutorId = registro.id
+          autor.push({
+            id: registro.id,
+            pseudonimo: registro.pseudonimo,
+            email: registro.email,
+            publicaciones: []
+          })
+        }
+        autor[0].publicaciones.push({
+          id: registro.publicacion_id,
+          titulo: registro.titulo,
+          resumen: registro.resumen,
+          votos: registro.votos
+        })
+      });
+      if(autor.length > 0){
+        respuesta.json({data: autor})
+      }
+      else{
+        respuesta.status(404)
+        respuesta.send({errors: ["No se encuentra ese autor"]})
+      }
     })
     connection.release()
   })

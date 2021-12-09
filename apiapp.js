@@ -26,6 +26,24 @@ app.get('/api/v1/publicaciones', function(peticion, respuesta) {
   
 })
 
+app.get('/api/v1/publicaciones/:id', function(peticion, respuesta) {
+  
+  pool.getConnection(function(err, connection) {
+    const query = `SELECT * FROM publicaciones WHERE id = ${connection.escape(peticion.params.id)}`
+    connection.query(query, function(error, filas, campos) {
+      if(filas.length > 0){
+        respuesta.json({data: filas[0]})
+      }
+      else{
+        respuesta.status(404)
+        respuesta.send({errors: ["No se encuentra esa publicación"]})
+      }
+    })
+    connection.release()
+  })
+  
+})
+
 app.listen(8080, function(){
   console.log("Servidor iniciado");
 })

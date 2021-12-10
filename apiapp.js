@@ -132,16 +132,52 @@ app.get('/api/v1/autores/:id', function(peticion, respuesta) {
 app.post('/api/v1/autores/', function(peticion, respuesta) {
   
   pool.getConnection(function(err, connection) {
-    const query = `INSERT INTO tareas (descripcion) VALUES (${connection.escape(peticion.body.descripcion)})`
-    connection.query(query, function(error, filas, campos) {
-      const nuevoId = filas.insertId
-      const queryConsulta = `SELECT * FROM tareas WHERE id = ${connection.escape(nuevoId)}`
-      connection.query(queryConsulta, function(error, filas, campos) {
-        respuesta.status(201)
-        respuesta.json({data: filas[0]})
-      })
+
+    const email = peticion.body.email
+    const pseudonimo = peticion.body.pseudonimo
+    const contrasena = peticion.body.contrasena
+
+    const consultaEmail = `
+      SELECT * FROM autores
+      WHERE email = ${connection.escape(email)}
+    `
+    connection.query(consultaEmail, function (error, filas, campos) {
+      if (filas.length > 0) {
+        respuesta.send({errors: ["Email de usuario duplicado"]})
+      }
+      else {
+        const consultaPseudonimo = `
+          SELECT * FROM autores
+          WHERE pseudonimo = ${connection.escape(pseudonimo)}
+        `
+        connection.query(consultaPseudonimo, function (error, filas, campos) {
+          if (filas.length > 0) {
+            respuesta.send({errors: ["Pseudonimo de usuario duplicado"]})
+          }
+          else {
+            const consulta = `
+              INSERT INTO autores
+              (email, contrasena, pseudonimo)
+              VALUES (
+                ${connection.escape(email)},
+                ${connection.escape(contrasena)},
+                ${connection.escape(pseudonimo)}
+              )
+            `
+            connection.query(consulta, function (error, filas, campos) {
+              const nuevoId = filas.insertId
+              const queryConsulta = `SELECT * FROM autores WHERE id = ${connection.escape(nuevoId)}`
+              connection.query(queryConsulta, function(error, filas, campos) {
+                respuesta.status(201)
+                respuesta.json({data: filas[0]})
+              })
+            })
+          }
+        })
+      }
     })
     connection.release()
+    
   })
   
 })

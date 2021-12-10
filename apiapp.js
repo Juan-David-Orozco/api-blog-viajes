@@ -168,6 +168,7 @@ app.post('/api/v1/autores/', function(peticion, respuesta) {
               const nuevoId = filas.insertId
               const queryConsulta = `SELECT * FROM autores WHERE id = ${connection.escape(nuevoId)}`
               connection.query(queryConsulta, function(error, filas, campos) {
+                console.log(filas)
                 respuesta.status(201)
                 respuesta.json({data: filas[0]})
               })
@@ -178,6 +179,23 @@ app.post('/api/v1/autores/', function(peticion, respuesta) {
     })
     connection.release()
     
+  })
+  
+})
+
+app.post('/api/v1/publicaciones/', function(peticion, respuesta) {
+  
+  pool.getConnection(function(err, connection) {
+    const consulta = `
+      SELECT * autores
+      WHERE
+      email = ${connection.escape(peticion.query.email)}
+    `
+    connection.query(consulta, function(error, filas, campos) {
+      console.log(filas)
+      respuesta.json({data: filas})
+    })
+    connection.release()
   })
   
 })

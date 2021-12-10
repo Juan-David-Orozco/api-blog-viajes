@@ -177,7 +177,51 @@ app.post('/api/v1/autores/', function(peticion, respuesta) {
       }
     })
     connection.release()
-    
+
+  })
+  
+})
+
+app.post('/api/v1/publicaciones/', function(peticion, respuesta) {
+  
+  pool.getConnection(function(err, connection) {
+    const consulta = `
+      SELECT titulo, resumen, fecha_hora, pseudonimo, votos, contenido
+      FROM publicaciones RIGHT JOIN autores
+      ON publicaciones.autor_id = autores.id
+      WHERE
+      email = ${connection.escape(peticion.query.email)} AND
+      contrasena = ${connection.escape(peticion.query.contrasena)}
+    `
+    connection.query(consulta, function(error, filas, campos) {
+      if (filas.length > 0) {
+        const titulo = peticion.body.titulo
+        const resumen = peticion.body.resumem
+        const contenido = peticion.body.contenido
+
+        const query = `
+        INSERT INTO publicaciones
+        (titulo, resumen, contenido)
+        VALUES (
+          ${connection.escape(titulo)},
+          ${connection.escape(resumen)},
+          ${connection.escape(contenido)},
+          )
+        `
+        connection.query(query, function(error, filas, campos) {
+          const nuevoIdpublicacion = filas.insertId
+          const queryConsulta = `SELECT * FROM publicaciones WHERE id = ${connection.escape(nuevoIdpublicacion)}`
+          connection.query(queryConsulta, function(error, filas, campos) {
+            respuesta.status(201)
+            respuesta.json({data: filas[0]})
+          })
+        })
+      }
+      else{
+        respuesta.send({errors: ["Publicacion no agregada - no se validaron las credenciales"]})
+      }
+    })
+    connection.release()
   })
   
 })
